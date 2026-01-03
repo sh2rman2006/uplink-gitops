@@ -1,16 +1,21 @@
-auth:
-  existingSecret: uplink-postgres-secret
+image:
+  repository: postgres
+  tag: "17"
 
-primary:
-  persistence:
-    enabled: true
-    storageClass: local-path
-    size: 10Gi
+postgres:
+  user: uplink
+  database: uplink
+  passwordSecret: uplink-postgres-secret
 
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

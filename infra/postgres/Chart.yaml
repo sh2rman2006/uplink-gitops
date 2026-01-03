@@ -1,8 +1,6 @@
 apiVersion: v2
 name: uplink-postgres
+description: Plain Postgres for uplink dev
 type: application
 version: 0.1.0
-dependencies:
-  - name: postgresql
-    version: 15.5.38
-    repository: https://charts.bitnami.com/bitnami
+appVersion: "17"
