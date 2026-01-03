@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: uplink-postgres
 spec:
+  clusterIP: None
   ports:
     - port: 5432
   selector:
