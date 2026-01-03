@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: uplink-dev
+  namespace: argocd
+spec:
+  project: uplink-dev
+  source:
+    repoURL: https://github.com/sh2rman2006/uplink-gitops
+    targetRevision: HEAD
+    path: environments/dev/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

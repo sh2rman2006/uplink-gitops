@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: uplink-dev
+  labels:
+    app.kubernetes.io/part-of: uplink
+    environment: dev
