@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: uplink-postgres
+  namespace: argocd
+spec:
+  project: uplink-dev
+  source:
+    repoURL: https://github.com/sh2rman2006/uplink-gitops.git
+    targetRevision: HEAD
+    path: infra/postgres
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: uplink-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
