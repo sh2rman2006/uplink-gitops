@@ -1,0 +1,28 @@
+image:
+  repository: apache/kafka
+  tag: "3.7.0"
+  pullPolicy: IfNotPresent
+
+service:
+  name: uplink-kafka
+  port: 9092
+
+persistence:
+  storageClass: local-path
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1500m
+    memory: 1536Mi
+
+kraft:
+  enabled: true
+  clusterId: "PVjHlx7ESeesq55jeB6Efw"
+
+# DNS внутри кластера (лучше не менять)
+dns:
+  namespace: uplink-dev

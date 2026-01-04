@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: uplink-kafka
+spec:
+  serviceName: {{ .Values.service.name }}-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uplink-kafka
+  template:
+    metadata:
+      labels:
+        app: uplink-kafka
+    spec:
+      containers:
+        - name: kafka
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: kafka
+              containerPort: 9092
+          env:
+            # имя pod'а — чтобы собрать advertised.listeners стабильно
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            # KRaft single-node (broker+controller in one)
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+
+            # listeners
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+
+            # controller quorum (в single-node указываем себя)
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@uplink-kafka-0.{{ .Values.service.name }}-headless.{{ .Values.dns.namespace }}.svc.cluster.local:9093"
+
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+
+            # advertised: pod DNS, чтобы клиенты внутри кластера не ломались
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://$(POD_NAME).{{ .Values.service.name }}-headless.{{ .Values.dns.namespace }}.svc.cluster.local:9092"
+
+            # storage
+            - name: KAFKA_LOG_DIRS
+              value: "/var/lib/kafka/data"
+
+            # kraft cluster id
+            - name: KAFKA_CLUSTER_ID
+              value: {{ .Values.kraft.clusterId | quote }}
+
+            # чуть более адекватные дефолты для дев
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_MIN_INSYNC_REPLICAS
+              value: "1"
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_NUM_PARTITIONS
+              value: "1"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/kafka/data
+
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
