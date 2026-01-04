@@ -45,7 +45,6 @@ spec:
 
           args:
             - "start"
-            - "--cache=local"
             {{- range .Values.keycloak.extraArgs }}
             - {{ . | quote }}
             {{- end }}
@@ -93,14 +92,6 @@ spec:
             - name: KC_HOSTNAME_STRICT
               value: "true"
 
-            - name: KC_HEALTH_ENABLED
-              value: "true"
-            - name: KC_METRICS_ENABLED
-              value: "true"
-
-            - name: KC_CACHE
-              value: "local"
-
             - name: KC_EVENTS_ENABLED
               value: "true"
             - name: KC_EVENTS_ADMIN_ENABLED
@@ -120,25 +111,21 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-            - name: mgmt
-              containerPort: 9000
 
           readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: mgmt
-            initialDelaySeconds: 30
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 25
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 12
+            timeoutSeconds: 1
+            failureThreshold: 18
 
           livenessProbe:
-            httpGet:
-              path: /health/live
-              port: mgmt
+            tcpSocket:
+              port: http
             initialDelaySeconds: 60
             periodSeconds: 20
-            timeoutSeconds: 5
+            timeoutSeconds: 1
             failureThreshold: 6
 
           resources:
