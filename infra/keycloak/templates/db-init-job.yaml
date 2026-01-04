@@ -1,15 +1,13 @@
-{{- if .Values.dbInit.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: uplink-keycloak-db-init
   namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   backoffLimit: 3
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       restartPolicy: Never
@@ -56,7 +54,6 @@ spec:
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${KC_DB_USER}') THEN
                   EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '${KC_DB_USER}', '${KC_DB_PASS}');
                 ELSE
-                  -- ensure password актуален
                   EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', '${KC_DB_USER}', '${KC_DB_PASS}');
                 END IF;
               END \$\$;"
@@ -75,4 +72,3 @@ spec:
               END \$\$;"
 
               echo "DB init done."
-{{- end }}

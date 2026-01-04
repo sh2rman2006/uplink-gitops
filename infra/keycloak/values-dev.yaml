@@ -19,11 +19,6 @@ ingress:
   tlsSecret: uplink-keycloak-dev-tls
 
 postgres:
-  host: uplink-postgres
-  port: 5432
-
-  # НУЖНО ДЛЯ db-init-job
-  # Это НЕ хранится в git: secret должен существовать в кластере (лучше через ESO)
   superuser:
     username: postgres
     database: postgres
