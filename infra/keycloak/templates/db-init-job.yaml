@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: uplink-keycloak-db-init
+  name: uplink-keycloak-db-init-v2
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
