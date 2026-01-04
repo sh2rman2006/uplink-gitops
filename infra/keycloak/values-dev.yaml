@@ -23,7 +23,7 @@ postgres:
   port: "5432"
   superuser:
     username: uplink
-    database: uplink
+    database: postgres
     secretName: uplink-postgres-secret
     passwordKey: password
 
@@ -42,6 +42,9 @@ secrets:
     vaultKey: uplink/dev/keycloak-db
     targetSecretName: uplink-keycloak-db
 
+keycloak:
+  extraArgs: [ ]
+
 kafka:
   bootstrapServers: "kafka:9092"
   topicUser: "uplink.user-events"
@@ -59,9 +62,7 @@ spi:
 
 dbInit:
   enabled: true
-
-keycloak:
-  extraArgs: [ ]
+  revision: "v3"
 
 resources:
   requests:

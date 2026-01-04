@@ -22,9 +22,8 @@ spec:
         - name: keycloak-kafka-listener-init
           image: "{{ .Values.spi.image.repository }}:{{ .Values.spi.image.tag }}"
           imagePullPolicy: {{ .Values.spi.image.pullPolicy }}
-          command:
-            - sh
-            - -c
+          command: [ "sh","-c" ]
+          args:
             - |
               set -e
               cp {{ .Values.spi.jarPath | quote }} "/providers/{{ .Values.spi.jarName }}"
@@ -41,12 +40,8 @@ spec:
 
           args:
             - "start"
-            {{- with .Values.keycloak }}
-            {{- with .extraArgs }}
-            {{- range . }}
+            {{- range .Values.keycloak.extraArgs }}
             - {{ . | quote }}
-            {{- end }}
-            {{- end }}
             {{- end }}
 
           env:
@@ -63,10 +58,12 @@ spec:
 
             - name: KC_DB
               value: "postgres"
+
             - name: KC_DB_URL_HOST
               value: {{ .Values.postgres.host | quote }}
             - name: KC_DB_URL_PORT
               value: {{ .Values.postgres.port | quote }}
+
             - name: KC_DB_URL_DATABASE
               valueFrom:
                 secretKeyRef:
