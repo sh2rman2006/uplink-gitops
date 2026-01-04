@@ -1,0 +1,53 @@
+{{- if .Values.ingress.enabled }}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uplink-minio
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.apiHost | quote }}
+      secretName: {{ .Values.ingress.apiTlsSecret | quote }}
+  rules:
+    - host: {{ .Values.ingress.apiHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uplink-minio
+                port:
+                  number: {{ .Values.service.port }}
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uplink-minio-console
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.consoleHost | quote }}
+      secretName: {{ .Values.ingress.consoleTlsSecret | quote }}
+  rules:
+    - host: {{ .Values.ingress.consoleHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uplink-minio
+                port:
+                  number: {{ .Values.service.consolePort }}
+
+{{- end }}

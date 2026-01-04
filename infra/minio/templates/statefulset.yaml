@@ -37,6 +37,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.auth.secretName | quote }}
                   key: rootPassword
+
+            - name: MINIO_SERVER_URL
+              value: {{ printf "https://%s" .Values.ingress.apiHost | quote }}
+            - name: MINIO_BROWSER_REDIRECT_URL
+              value: {{ printf "https://%s" .Values.ingress.consoleHost | quote }}
+
           volumeMounts:
             - name: data
               mountPath: /data

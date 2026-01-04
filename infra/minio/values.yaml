@@ -22,3 +22,14 @@ auth:
   secretName: uplink-minio-secret
   vaultKey: uplink/dev/minio
   secretStoreName: vault-uplink
+
+ingress:
+  enabled: true
+  className: traefik
+  clusterIssuer: letsencrypt-prod
+
+  apiHost: uplink-minio-dev.sh-2rm-an.tech
+  consoleHost: uplink-minio-console-dev.sh-2rm-an.tech
+
+  apiTlsSecret: uplink-minio-dev-tls
+  consoleTlsSecret: uplink-minio-console-dev-tls
