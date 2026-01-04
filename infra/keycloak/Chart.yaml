@@ -1,6 +1,6 @@
 apiVersion: v2
 name: uplink-keycloak
-description: Uplink Keycloak (26.2.5) with Vault ExternalSecrets and SPI provider
+description: Uplink Keycloak (26.2.5) + ESO + db init job + SPI initContainer
 type: application
 version: 0.1.0
 appVersion: "26.2.5"

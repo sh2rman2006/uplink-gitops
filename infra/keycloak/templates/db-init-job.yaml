@@ -16,13 +16,10 @@ spec:
         - name: psql
           image: postgres:17
           env:
-            # куда подключаемся
             - name: PGHOST
               value: {{ .Values.postgres.host | quote }}
             - name: PGPORT
               value: {{ .Values.postgres.port | quote }}
-
-            # админ-креды инстанса (у тебя это uplink)
             - name: PGUSER
               value: {{ .Values.postgres.superuser.username | quote }}
             - name: PGDATABASE
@@ -33,7 +30,6 @@ spec:
                   name: {{ .Values.postgres.superuser.secretName | quote }}
                   key: {{ .Values.postgres.superuser.passwordKey | default "password" | quote }}
 
-            # креды Keycloak DB из ESO (Vault)
             - name: KC_DB_NAME
               valueFrom:
                 secretKeyRef:
@@ -54,11 +50,9 @@ spec:
           args:
             - |
               set -euo pipefail
+              echo "[db-init] admin=${PGUSER} db=${PGDATABASE} host=${PGHOST}:${PGPORT}"
+              echo "[db-init] target db=${KC_DB_NAME} user=${KC_DB_USER}"
 
-              echo "[db-init] connecting to ${PGHOST}:${PGPORT} as ${PGUSER}, db=${PGDATABASE}"
-              echo "[db-init] target db=${KC_DB_NAME}, user=${KC_DB_USER}"
-
-              # 1) роль (создать или обновить пароль)
               psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${KC_DB_USER}') THEN
                   EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '${KC_DB_USER}', '${KC_DB_PASS}');
@@ -67,14 +61,12 @@ spec:
                 END IF;
               END \$\$;"
 
-              # 2) база (создать, если нет)
               psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '${KC_DB_NAME}') THEN
                   EXECUTE format('CREATE DATABASE %I OWNER %I', '${KC_DB_NAME}', '${KC_DB_USER}');
                 END IF;
               END \$\$;"
 
-              # 3) owner + привилегии
               psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
                 EXECUTE format('ALTER DATABASE %I OWNER TO %I', '${KC_DB_NAME}', '${KC_DB_USER}');
                 EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', '${KC_DB_NAME}', '${KC_DB_USER}');

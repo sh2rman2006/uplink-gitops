@@ -5,7 +5,7 @@ metadata:
   name: uplink-keycloak
   namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
     cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
 spec:
   ingressClassName: {{ .Values.ingress.className | quote }}

@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: uplink-keycloak
   namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
   labels:
     app: uplink-keycloak
 spec:
@@ -39,8 +41,12 @@ spec:
 
           args:
             - "start"
-            {{- range .Values.keycloak.extraArgs }}
+            {{- with .Values.keycloak }}
+            {{- with .extraArgs }}
+            {{- range . }}
             - {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- end }}
 
           env:

@@ -60,6 +60,9 @@ spi:
 dbInit:
   enabled: true
 
+keycloak:
+  extraArgs: [ ]
+
 resources:
   requests:
     cpu: 200m
