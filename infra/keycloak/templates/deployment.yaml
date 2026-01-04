@@ -44,7 +44,6 @@ spec:
             {{- end }}
 
           env:
-            # admin bootstrap (Vault -> ESO Secret)
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -56,7 +55,6 @@ spec:
                   name: {{ .Values.secrets.admin.targetSecretName | quote }}
                   key: adminPassword
 
-            # DB (готовая БД, без init job)
             - name: KC_DB
               value: "postgres"
             - name: KC_DB_URL_HOST
@@ -79,7 +77,6 @@ spec:
                   name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: password
 
-            # HTTP/Proxy/Hostname (Traefik ingress)
             - name: KC_HTTP_ENABLED
               value: "true"
             - name: KC_PROXY
@@ -93,7 +90,6 @@ spec:
             - name: KC_METRICS_ENABLED
               value: "true"
 
-            # Включаем события и наш listener
             - name: KC_EVENTS_ENABLED
               value: "true"
             - name: KC_EVENTS_ADMIN_ENABLED
@@ -101,7 +97,6 @@ spec:
             - name: KC_EVENTS_LISTENERS
               value: "kafka"
 
-            # Kafka env for SPI
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: {{ .Values.kafka.bootstrapServers | quote }}
             - name: KAFKA_TOPIC_USER

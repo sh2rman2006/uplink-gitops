@@ -22,6 +22,14 @@ postgres:
   host: uplink-postgres
   port: 5432
 
+  # НУЖНО ДЛЯ db-init-job
+  # Это НЕ хранится в git: secret должен существовать в кластере (лучше через ESO)
+  superuser:
+    username: postgres
+    database: postgres
+    secretName: uplink-postgres-secret
+    passwordKey: password
+
 secrets:
   storeRef:
     kind: ClusterSecretStore
@@ -41,11 +49,11 @@ kafka:
   bootstrapServers: "kafka:9092"
   topicUser: "uplink.user-events"
   topicAdmin: "uplink.admin-events"
-  enabledEvents: ""   # пусто = слать всё
+  enabledEvents: "" # пусто = слать всё
 
 keycloak:
-  # Важно: провайдер подключается как EVENTS LISTENER (не SPI arg)
-  extraArgs: []
+  # Можно докидывать args (например, --log-level=INFO), но по умолчанию пусто
+  extraArgs: [ ]
 
 spi:
   enabled: true
@@ -55,6 +63,9 @@ spi:
     pullPolicy: Always
   jarPath: /opt/keycloak/providers/keycloak-kafka-listener.jar
   jarName: keycloak-kafka-listener.jar
+
+dbInit:
+  enabled: true  # dev: создаём роль/бд автоматически
 
 resources:
   requests:

@@ -1,9 +1,12 @@
+{{- if .Values.dbInit.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: uplink-keycloak-db-init
+  namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 3
@@ -19,49 +22,57 @@ spec:
             - name: PGPORT
               value: {{ .Values.postgres.port | quote }}
             - name: PGUSER
-              value: {{ .Values.postgres.superuserUser | quote }}
+              value: {{ .Values.postgres.superuser.username | quote }}
             - name: PGDATABASE
-              value: {{ .Values.postgres.superuserDb | quote }}
+              value: {{ .Values.postgres.superuser.database | quote }}
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.postgres.superuserSecretName | quote }}
-                  key: password
+                  name: {{ .Values.postgres.superuser.secretName | quote }}
+                  key: {{ .Values.postgres.superuser.passwordKey | default "password" | quote }}
 
             - name: KC_DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: database
             - name: KC_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: username
             - name: KC_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: password
-          command: ["/bin/bash","-lc"]
+          command: [ "/bin/bash","-lc" ]
           args:
             - |
               set -euo pipefail
 
-              echo "Ensuring role ${KC_DB_USER} exists..."
-              psql -v ON_ERROR_STOP=1 -c "DO \$\$
-              BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${KC_DB_USER}') THEN
-                  CREATE ROLE ${KC_DB_USER} LOGIN PASSWORD '${KC_DB_PASS}';
+              echo "Ensuring role exists: ${KC_DB_USER}"
+              psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${KC_DB_USER}') THEN
+                  EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '${KC_DB_USER}', '${KC_DB_PASS}');
+                ELSE
+                  -- ensure password актуален
+                  EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', '${KC_DB_USER}', '${KC_DB_PASS}');
                 END IF;
-              END
-              \$\$;"
+              END \$\$;"
 
-              echo "Ensuring database ${KC_DB_NAME} exists..."
-              psql -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_database WHERE datname='${KC_DB_NAME}';" | grep -q 1 || \
-                psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE ${KC_DB_NAME} OWNER ${KC_DB_USER};"
+              echo "Ensuring database exists: ${KC_DB_NAME}"
+              psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '${KC_DB_NAME}') THEN
+                  EXECUTE format('CREATE DATABASE %I OWNER %I', '${KC_DB_NAME}', '${KC_DB_USER}');
+                END IF;
+              END \$\$;"
 
-              echo "Granting privileges..."
-              psql -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE ${KC_DB_NAME} TO ${KC_DB_USER};"
+              echo "Ensuring ownership + privileges..."
+              psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN
+                EXECUTE format('ALTER DATABASE %I OWNER TO %I', '${KC_DB_NAME}', '${KC_DB_USER}');
+                EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', '${KC_DB_NAME}', '${KC_DB_USER}');
+              END \$\$;"
 
-              echo "Done."
+              echo "DB init done."
+{{- end }}
