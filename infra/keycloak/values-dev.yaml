@@ -20,7 +20,7 @@ ingress:
 
 postgres:
   host: uplink-postgres
-  port: 5432
+  port: "5432"
   superuser:
     username: uplink
     database: uplink
