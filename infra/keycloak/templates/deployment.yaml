@@ -21,6 +21,7 @@ spec:
     metadata:
       labels:
         app: uplink-keycloak
+
     spec:
       {{- if .Values.spi.enabled }}
       initContainers:
@@ -92,6 +93,15 @@ spec:
             - name: KC_HOSTNAME_STRICT
               value: "true"
 
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
+            - name: KC_HOSTNAME_URL
+              value: "https://{{ .Values.ingress.host }}"
+            - name: KC_HOSTNAME_ADMIN_URL
+              value: "https://{{ .Values.ingress.host }}"
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: "true"
+
             - name: KC_EVENTS_ENABLED
               value: "true"
             - name: KC_EVENTS_ADMIN_ENABLED
@@ -107,26 +117,12 @@ spec:
               value: {{ .Values.kafka.topicAdmin | quote }}
             - name: KAFKA_ENABLED_EVENTS
               value: {{ .Values.kafka.enabledEvents | quote }}
+            - name: KAFKA_ADMIN_EVENTS_ENABLED
+              value: {{ .Values.kafka.adminEventsEnabled | quote }}
 
           ports:
             - name: http
               containerPort: 8080
-
-          readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 25
-            periodSeconds: 10
-            timeoutSeconds: 1
-            failureThreshold: 18
-
-          livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            timeoutSeconds: 1
-            failureThreshold: 6
 
           resources:
 {{ toYaml .Values.resources | indent 12 }}

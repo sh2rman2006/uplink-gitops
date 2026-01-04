@@ -44,6 +44,10 @@ secrets:
 
 keycloak:
   extraArgs: [ ]
+  proxyHeaders: "xforwarded"
+  hostnameUrl: "https://uplink-keycloak-dev.sh-2rm-an.tech"
+  hostnameAdminUrl: "https://uplink-keycloak-dev.sh-2rm-an.tech"
+  hostnameStrictHttps: true
 
 kafka:
   bootstrapServers: "kafka:9092"
