@@ -11,7 +11,7 @@ spec:
     path: infra/keycloak
     helm:
       valueFiles:
-        - values.yaml
+        - values-dev.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: uplink-dev
