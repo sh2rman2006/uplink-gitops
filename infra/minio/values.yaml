@@ -1,0 +1,24 @@
+image:
+  repository: minio/minio
+  tag: "latest"
+
+service:
+  port: 9000
+  consolePort: 9001
+
+persistence:
+  storageClass: local-path
+  size: 20Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 600m
+    memory: 1Gi
+
+auth:
+  secretName: uplink-minio-secret
+  vaultKey: uplink/dev/minio
+  secretStoreName: vault-uplink
