@@ -58,12 +58,10 @@ spec:
 
             - name: KC_DB
               value: "postgres"
-
             - name: KC_DB_URL_HOST
               value: {{ .Values.postgres.host | quote }}
             - name: KC_DB_URL_PORT
               value: {{ .Values.postgres.port | quote }}
-
             - name: KC_DB_URL_DATABASE
               valueFrom:
                 secretKeyRef:
@@ -88,10 +86,14 @@ spec:
               value: {{ .Values.ingress.host | quote }}
             - name: KC_HOSTNAME_STRICT
               value: "true"
+
             - name: KC_HEALTH_ENABLED
               value: "true"
             - name: KC_METRICS_ENABLED
               value: "true"
+
+            - name: KC_CACHE
+              value: "local"
 
             - name: KC_EVENTS_ENABLED
               value: "true"
@@ -112,20 +114,26 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: mgmt
+              containerPort: 9000
 
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: http
-            initialDelaySeconds: 20
+              port: mgmt
+            initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
 
           livenessProbe:
             httpGet:
               path: /health/live
-              port: http
-            initialDelaySeconds: 40
+              port: mgmt
+            initialDelaySeconds: 60
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
 
           resources:
 {{ toYaml .Values.resources | indent 12 }}
