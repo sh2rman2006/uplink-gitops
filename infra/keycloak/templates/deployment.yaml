@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: uplink-keycloak
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: uplink-keycloak
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -14,65 +15,48 @@ spec:
       labels:
         app: uplink-keycloak
     spec:
-      {{- if .Values.listener.enabled }}
+      {{- if .Values.spi.enabled }}
       initContainers:
-        - name: copy-listener
-          image: "{{ .Values.listener.image.repository }}:{{ .Values.listener.image.tag }}"
-          imagePullPolicy: {{ .Values.listener.image.pullPolicy }}
-          command: ["/bin/sh","-lc"]
-          args:
+        - name: keycloak-kafka-listener-init
+          image: "{{ .Values.spi.image.repository }}:{{ .Values.spi.image.tag }}"
+          imagePullPolicy: {{ .Values.spi.image.pullPolicy }}
+          command:
+            - sh
+            - -c
             - |
               set -e
-              echo "Copying listener jars from {{ .Values.listener.jarGlob }} ..."
-              mkdir -p /out
-              cp -v {{ .Values.listener.jarGlob }} /out/
-              ls -lah /out
+              cp {{ .Values.spi.jarPath | quote }} "/providers/{{ .Values.spi.jarName }}"
+              ls -lah /providers
           volumeMounts:
             - name: providers
-              mountPath: /out
+              mountPath: /providers
       {{- end }}
 
       containers:
         - name: keycloak
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/bin/bash","-lc"]
+
           args:
-            - |
-              set -e
-              # Важно: если добавляем provider jar, делаем build один раз при старте контейнера
-              /opt/keycloak/bin/kc.sh build
-              exec /opt/keycloak/bin/kc.sh start
-          ports:
-            - name: http
-              containerPort: 8080
+            - "start"
+            {{- range .Values.keycloak.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
 
           env:
-            # behind traefik
-            - name: KC_PROXY
-              value: "edge"
-            - name: KC_HTTP_ENABLED
-              value: "true"
-            - name: KC_HOSTNAME
-              value: {{ .Values.ingress.host | quote }}
-            - name: KC_HOSTNAME_STRICT
-              value: "false"
-            - name: KC_HOSTNAME_STRICT_HTTPS
-              value: "false"
-
-            # admin
-            - name: KEYCLOAK_ADMIN
+            # admin bootstrap (Vault -> ESO Secret)
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.admin.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.admin.targetSecretName | quote }}
                   key: adminUser
-            - name: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.admin.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.admin.targetSecretName | quote }}
                   key: adminPassword
 
-            # db
+            # DB (готовая БД, без init job)
             - name: KC_DB
               value: "postgres"
             - name: KC_DB_URL_HOST
@@ -82,34 +66,80 @@ spec:
             - name: KC_DB_URL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: database
             - name: KC_DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: username
             - name: KC_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: password
 
-            # events listener (твоя SPI)
-            - name: KC_SPI_EVENTS_LISTENER_PROVIDER
+            # HTTP/Proxy/Hostname (Traefik ingress)
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_PROXY
+              value: "edge"
+            - name: KC_HOSTNAME
+              value: {{ .Values.ingress.host | quote }}
+            - name: KC_HOSTNAME_STRICT
+              value: "true"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+
+            # Включаем события и наш listener
+            - name: KC_EVENTS_ENABLED
+              value: "true"
+            - name: KC_EVENTS_ADMIN_ENABLED
+              value: "true"
+            - name: KC_EVENTS_LISTENERS
               value: "kafka"
 
-            # kafka bootstrap для listener
+            # Kafka env for SPI
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: {{ .Values.kafka.bootstrapServers | quote }}
+            - name: KAFKA_TOPIC_USER
+              value: {{ .Values.kafka.topicUser | quote }}
+            - name: KAFKA_TOPIC_ADMIN
+              value: {{ .Values.kafka.topicAdmin | quote }}
+            - name: KAFKA_ENABLED_EVENTS
+              value: {{ .Values.kafka.enabledEvents | quote }}
+
+          ports:
+            - name: http
+              containerPort: 8080
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 20
 
           resources:
 {{ toYaml .Values.resources | indent 12 }}
 
+          {{- if .Values.spi.enabled }}
           volumeMounts:
             - name: providers
               mountPath: /opt/keycloak/providers
+          {{- end }}
 
+      {{- if .Values.spi.enabled }}
       volumes:
         - name: providers
-          emptyDir: {}
+          emptyDir: { }
+      {{- end }}

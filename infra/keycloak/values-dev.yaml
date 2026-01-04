@@ -1,0 +1,65 @@
+namespace: uplink-dev
+
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "26.2.5"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  name: uplink-keycloak
+  port: 8080
+
+ingress:
+  enabled: true
+  className: traefik
+  host: uplink-keycloak-dev.sh-2rm-an.tech
+  clusterIssuer: letsencrypt-prod
+  tlsSecret: uplink-keycloak-dev-tls
+
+postgres:
+  host: uplink-postgres
+  port: 5432
+
+secrets:
+  storeRef:
+    kind: ClusterSecretStore
+    name: vault-uplink
+
+  admin:
+    externalSecretName: uplink-keycloak-admin
+    vaultKey: uplink/dev/keycloak
+    targetSecretName: uplink-keycloak-admin
+
+  db:
+    externalSecretName: uplink-keycloak-db
+    vaultKey: uplink/dev/keycloak-db
+    targetSecretName: uplink-keycloak-db
+
+kafka:
+  bootstrapServers: "kafka:9092"
+  topicUser: "uplink.user-events"
+  topicAdmin: "uplink.admin-events"
+  enabledEvents: ""   # пусто = слать всё
+
+keycloak:
+  # Важно: провайдер подключается как EVENTS LISTENER (не SPI arg)
+  extraArgs: []
+
+spi:
+  enabled: true
+  image:
+    repository: sh2rman/uplink
+    tag: latest
+    pullPolicy: Always
+  jarPath: /opt/keycloak/providers/keycloak-kafka-listener.jar
+  jarName: keycloak-kafka-listener.jar
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

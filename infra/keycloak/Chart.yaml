@@ -1,4 +1,6 @@
 apiVersion: v2
 name: uplink-keycloak
-version: 0.1.0
+description: Uplink Keycloak (26.2.5) with Vault ExternalSecrets and SPI provider
 type: application
+version: 0.1.0
+appVersion: "26.2.5"
