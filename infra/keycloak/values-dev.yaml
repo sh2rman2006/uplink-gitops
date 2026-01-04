@@ -19,9 +19,11 @@ ingress:
   tlsSecret: uplink-keycloak-dev-tls
 
 postgres:
+  host: uplink-postgres
+  port: 5432
   superuser:
-    username: postgres
-    database: postgres
+    username: uplink
+    database: uplink
     secretName: uplink-postgres-secret
     passwordKey: password
 
@@ -44,11 +46,7 @@ kafka:
   bootstrapServers: "kafka:9092"
   topicUser: "uplink.user-events"
   topicAdmin: "uplink.admin-events"
-  enabledEvents: "" # пусто = слать всё
-
-keycloak:
-  # Можно докидывать args (например, --log-level=INFO), но по умолчанию пусто
-  extraArgs: [ ]
+  enabledEvents: ""
 
 spi:
   enabled: true
@@ -60,7 +58,7 @@ spi:
   jarName: keycloak-kafka-listener.jar
 
 dbInit:
-  enabled: true  # dev: создаём роль/бд автоматически
+  enabled: true
 
 resources:
   requests:
