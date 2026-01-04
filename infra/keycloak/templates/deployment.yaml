@@ -9,9 +9,14 @@ metadata:
     app: uplink-keycloak
 spec:
   replicas: {{ .Values.replicaCount }}
+
+  strategy:
+    type: Recreate
+
   selector:
     matchLabels:
       app: uplink-keycloak
+
   template:
     metadata:
       labels:
@@ -40,6 +45,7 @@ spec:
 
           args:
             - "start"
+            - "--cache=local"
             {{- range .Values.keycloak.extraArgs }}
             - {{ . | quote }}
             {{- end }}
