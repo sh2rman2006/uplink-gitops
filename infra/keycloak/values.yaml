@@ -1,0 +1,58 @@
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "26.2.5"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  name: uplink-keycloak
+  port: 8080
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1500m
+    memory: 1536Mi
+
+ingress:
+  enabled: true
+  className: traefik
+  clusterIssuer: letsencrypt-prod
+  host: uplink-keycloak-dev.sh-2rm-an.tech
+  tlsSecret: uplink-keycloak-dev-tls
+
+kafka:
+  bootstrapServers: "uplink-kafka:9092"
+
+listener:
+  enabled: true
+  # !!! Поставь сюда образ, где лежит твой SPI jar !!!
+  image:
+    repository: sh2rman/keycloak-kafka-listener
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  # где внутри listener-образа лежит jar (оставил максимально гибко)
+  jarGlob: "/provider/*.jar"
+
+secrets:
+  secretStoreName: vault-uplink
+
+  admin:
+    k8sSecretName: uplink-keycloak-admin
+    vaultKey: uplink/dev/keycloak
+
+  db:
+    k8sSecretName: uplink-keycloak-db
+    vaultKey: uplink/dev/keycloak-db
+
+postgres:
+  host: uplink-postgres
+  port: 5432
+
+  # суперюзер постгреса (у тебя уже используется для uplink-postgres)
+  superuserSecretName: uplink-postgres-secret
+  superuserUser: uplink
+  superuserDb: uplink

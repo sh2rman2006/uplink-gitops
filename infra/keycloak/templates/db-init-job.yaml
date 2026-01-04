@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: uplink-keycloak-db-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:17
+          env:
+            - name: PGHOST
+              value: {{ .Values.postgres.host | quote }}
+            - name: PGPORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: PGUSER
+              value: {{ .Values.postgres.superuserUser | quote }}
+            - name: PGDATABASE
+              value: {{ .Values.postgres.superuserDb | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.superuserSecretName | quote }}
+                  key: password
+
+            - name: KC_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  key: database
+            - name: KC_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  key: username
+            - name: KC_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.db.k8sSecretName | quote }}
+                  key: password
+          command: ["/bin/bash","-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              echo "Ensuring role ${KC_DB_USER} exists..."
+              psql -v ON_ERROR_STOP=1 -c "DO \$\$
+              BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${KC_DB_USER}') THEN
+                  CREATE ROLE ${KC_DB_USER} LOGIN PASSWORD '${KC_DB_PASS}';
+                END IF;
+              END
+              \$\$;"
+
+              echo "Ensuring database ${KC_DB_NAME} exists..."
+              psql -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_database WHERE datname='${KC_DB_NAME}';" | grep -q 1 || \
+                psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE ${KC_DB_NAME} OWNER ${KC_DB_USER};"
+
+              echo "Granting privileges..."
+              psql -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE ${KC_DB_NAME} TO ${KC_DB_USER};"
+
+              echo "Done."
