@@ -50,7 +50,7 @@ keycloak:
   hostnameStrictHttps: true
 
 kafka:
-  bootstrapServers: "kafka:9092"
+  bootstrapServers: "uplink-kafka:9092"
   topicUser: "uplink.user-events"
   topicAdmin: "uplink.admin-events"
   enabledEvents: ""
