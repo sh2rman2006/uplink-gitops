@@ -14,3 +14,9 @@ persistence:
   enabled: true
   storageClass: local-path
   size: 2Gi
+
+auth:
+  enabled: true
+  secretName: uplink-redis-secret
+  vaultKey: uplink/dev/redis
+  secretStoreName: vault-uplink
