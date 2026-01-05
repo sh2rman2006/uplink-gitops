@@ -17,19 +17,10 @@ spec:
         - name: redis
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
 
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.auth.secretName | quote }}
-                  key: password
-
           command: [ "sh", "-c" ]
           args:
             - >
-              exec redis-server
-              --appendonly yes
-              --requirepass "$REDIS_PASSWORD"
+              exec redis-server /etc/redis/redis.conf
 
           ports:
             - name: redis
@@ -38,9 +29,22 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: redis-auth
+              mountPath: /etc/redis
+              readOnly: true
 
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+
+      volumes:
+        - name: redis-auth
+          secret:
+            secretName: {{ .Values.auth.secretName | quote }}
+            items:
+              - key: redis.conf
+                path: redis.conf
+              - key: users.acl
+                path: users.acl
 
   volumeClaimTemplates:
     - metadata:

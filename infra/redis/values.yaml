@@ -17,6 +17,8 @@ persistence:
 
 auth:
   enabled: true
-  secretName: uplink-redis-secret
+  secretName: uplink-redis-auth
   vaultKey: uplink/dev/redis
   secretStoreName: vault-uplink
+  userKey: username
+  passKey: password
