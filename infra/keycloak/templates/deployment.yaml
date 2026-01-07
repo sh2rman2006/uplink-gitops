@@ -84,23 +84,30 @@ spec:
                   name: {{ .Values.secrets.db.targetSecretName | quote }}
                   key: password
 
+            # === DEV HTTP MODE ===
             - name: KC_HTTP_ENABLED
               value: "true"
             - name: KC_PROXY
               value: "edge"
+
             - name: KC_HOSTNAME
               value: {{ .Values.ingress.host | quote }}
+
+            # в dev не зажимаем strict
             - name: KC_HOSTNAME_STRICT
-              value: "true"
+              value: "false"
 
             - name: KC_PROXY_HEADERS
-              value: "xforwarded"
+              value: {{ .Values.keycloak.proxyHeaders | default "xforwarded" | quote }}
+
+            # ВАЖНО: только http
             - name: KC_HOSTNAME_URL
-              value: "https://{{ .Values.ingress.host }}"
+              value: {{ .Values.keycloak.hostnameUrl | quote }}
             - name: KC_HOSTNAME_ADMIN_URL
-              value: "https://{{ .Values.ingress.host }}"
+              value: {{ .Values.keycloak.hostnameAdminUrl | quote }}
             - name: KC_HOSTNAME_STRICT_HTTPS
-              value: "true"
+              value: {{ ternary "true" "false" (.Values.keycloak.hostnameStrictHttps | default false) | quote }}
+            # === /DEV HTTP MODE ===
 
             - name: KC_EVENTS_ENABLED
               value: "true"

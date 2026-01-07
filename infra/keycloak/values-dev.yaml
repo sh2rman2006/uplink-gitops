@@ -11,12 +11,14 @@ service:
   name: uplink-keycloak
   port: 8080
 
+# ВАРИАНТ 1 (DEV): HTTP ingress, без TLS/Let's Encrypt
 ingress:
   enabled: true
   className: traefik
   host: uplink-keycloak-dev.sh-2rm-an.tech
-  clusterIssuer: letsencrypt-prod
-  tlsSecret: uplink-keycloak-dev-tls
+
+  # добавляем явный флаг, чтобы шаблон ingress.yaml не создавал tls секцию
+  tlsEnabled: false
 
 postgres:
   host: uplink-postgres
@@ -45,15 +47,17 @@ secrets:
 keycloak:
   extraArgs: [ ]
   proxyHeaders: "xforwarded"
-  hostnameUrl: "https://uplink-keycloak-dev.sh-2rm-an.tech"
-  hostnameAdminUrl: "https://uplink-keycloak-dev.sh-2rm-an.tech"
-  hostnameStrictHttps: true
+
+  hostnameUrl: "http://uplink-keycloak-dev.sh-2rm-an.tech"
+  hostnameAdminUrl: "http://uplink-keycloak-dev.sh-2rm-an.tech"
+  hostnameStrictHttps: false
 
 kafka:
   bootstrapServers: "uplink-kafka:9092"
   topicUser: "uplink.user-events"
   topicAdmin: "uplink.admin-events"
   enabledEvents: ""
+  adminEventsEnabled: "true"
 
 spi:
   enabled: true
