@@ -5,13 +5,14 @@ kind: Ingress
 metadata:
   name: uplink-minio
   annotations:
-    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+#    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
 spec:
   ingressClassName: {{ .Values.ingress.className | quote }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.apiHost | quote }}
-      secretName: {{ .Values.ingress.apiTlsSecret | quote }}
+#  tls:
+#    - hosts:
+#        - {{ .Values.ingress.apiHost | quote }}
+#      secretName: {{ .Values.ingress.apiTlsSecret | quote }}
   rules:
     - host: {{ .Values.ingress.apiHost | quote }}
       http:
@@ -31,13 +32,14 @@ kind: Ingress
 metadata:
   name: uplink-minio-console
   annotations:
-    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+#    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
 spec:
   ingressClassName: {{ .Values.ingress.className | quote }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.consoleHost | quote }}
-      secretName: {{ .Values.ingress.consoleTlsSecret | quote }}
+#  tls:
+#    - hosts:
+#        - {{ .Values.ingress.consoleHost | quote }}
+#      secretName: {{ .Values.ingress.consoleTlsSecret | quote }}
   rules:
     - host: {{ .Values.ingress.consoleHost | quote }}
       http:

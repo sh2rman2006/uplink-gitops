@@ -39,9 +39,9 @@ spec:
                   key: rootPassword
 
             - name: MINIO_SERVER_URL
-              value: {{ printf "https://%s" .Values.ingress.apiHost | quote }}
+              value: {{ printf "http://%s" .Values.ingress.apiHost | quote }}
             - name: MINIO_BROWSER_REDIRECT_URL
-              value: {{ printf "https://%s" .Values.ingress.consoleHost | quote }}
+              value: {{ printf "http://%s" .Values.ingress.consoleHost | quote }}
 
           volumeMounts:
             - name: data
